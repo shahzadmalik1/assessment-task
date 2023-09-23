@@ -15,12 +15,20 @@ class WebhookController extends Controller
 
     /**
      * Pass the necessary data to the process order method
-     * 
+     *
      * @param  Request $request
      * @return JsonResponse
      */
     public function __invoke(Request $request): JsonResponse
     {
-        // TODO: Complete this method
+        try {
+            $order = $this->orderService->processOrder($request->toArray());
+
+            // Assuming $this->orderService->processOrder returns the processed order
+            return new JsonResponse(['message' => 'Order processed successfully', 'order' => $order], 200);
+        } catch (\Exception $e) {
+            // Handle any exceptions that may occur during order processing
+            return new JsonResponse(['error' => 'Order processing failed', 'message' => $e->getMessage()], 500);
+        }
     }
 }

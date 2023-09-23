@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
-use App\Jobs\PayoutOrderJob;
-use App\Models\Affiliate;
-use App\Models\Merchant;
-use App\Models\Order;
 use App\Models\User;
+use App\Models\Order;
+use App\Models\Merchant;
+use App\Models\Affiliate;
+use App\Jobs\PayoutOrderJob;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 
 class MerchantService
 {
@@ -20,8 +22,24 @@ class MerchantService
      */
     public function register(array $data): Merchant
     {
-        // TODO: Complete this method
+        $dataUser = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['api_key'],
+            'type' => User::TYPE_MERCHANT,
+        ]);
+
+        $merchant = new Merchant([
+            'user_id' => $dataUser->id,
+            'display_name' => $dataUser->name,
+            'domain' => $data['domain']
+        ]);
+
+        $merchant->save();
+
+        return $merchant;
     }
+
 
     /**
      * Update the user
@@ -31,7 +49,20 @@ class MerchantService
      */
     public function updateMerchant(User $user, array $data)
     {
-        // TODO: Complete this method
+        $dataUser = User::updateOrCreate(['user_id' => $user->id], [
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['api_key'],
+            'type' => User::TYPE_MERCHANT,
+        ]);
+
+        $merchant = Merchant::latest()->first()->update([
+            'user_id' => $dataUser->id,
+            'display_name' => $data['name'],
+            'domain' => $data['domain']
+        ]);
+
+        return $merchant;
     }
 
     /**
@@ -43,7 +74,11 @@ class MerchantService
      */
     public function findMerchantByEmail(string $email): ?Merchant
     {
-        // TODO: Complete this method
+        $user = User::where('email', $email)->first();
+        if ($user) {
+            return Merchant::where('user_id', $user->id)->first();
+        }
+        return null;
     }
 
     /**
@@ -55,6 +90,11 @@ class MerchantService
      */
     public function payout(Affiliate $affiliate)
     {
-        // TODO: Complete this method
+        $unpaidOrders = $affiliate->orders()->where('status', 'unpaid')->get();
+
+        foreach ($unpaidOrders as $order) {
+            $order->update(['status' => 'paid']);
+            dispatch(new PayoutOrderJob($order));
+        }
     }
 }

@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\Affiliate;
-use App\Models\Merchant;
-use Illuminate\Support\Str;
 use RuntimeException;
+use App\Models\Merchant;
+use App\Models\Affiliate;
+use Illuminate\Support\Str;
+use App\Mail\AffiliateCreated;
+use App\Services\AffiliateService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * You don't need to do anything here. This is just to help
@@ -37,6 +41,17 @@ class ApiService
      */
     public function sendPayout(string $email, float $amount)
     {
-        //
+        try {
+            $affiliate = AffiliateService::getAffiliate($email);
+
+            foreach($affiliate->orders as $order){
+                $order->payout_status = Order::STATUS_PAID;
+                $order->save();
+            }
+
+            Mail::to($email)->send(new AffiliateCreated($affiliate));
+        } catch (\Throwable $th) {
+            throw $th;
+        }
     }
 }

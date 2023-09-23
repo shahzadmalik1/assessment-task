@@ -43,6 +43,7 @@ class OrderServiceTest extends TestCase
             'customer_name' => $this->faker->name()
         ];
 
+
         /** @var Affiliate $affiliate */
         $affiliate = Affiliate::factory()
             ->for($this->merchant)
@@ -51,10 +52,12 @@ class OrderServiceTest extends TestCase
                 'discount_code' => $data['discount_code']
             ]);
 
-        $this->mock(AffiliateService::class)
+            $this->mock(AffiliateService::class)
             ->shouldReceive('register')
             ->once()
-            ->with(\Mockery::on(fn ($model) => $model->is($this->merchant)), $data['customer_email'], $data['customer_name'], 0.1);
+            ->with(\Mockery::on(fn ($model) => $model->is($this->merchant)), $data['customer_email'], $data['customer_name'], 0.1)
+            ->andReturn($affiliate);
+
 
         $this->getOrderService()->processOrder($data);
 

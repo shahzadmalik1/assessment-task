@@ -2,17 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\PayoutOrderJob;
-use App\Models\Affiliate;
-use App\Models\Merchant;
-use App\Models\Order;
+use Tests\TestCase;
 use App\Models\User;
+use App\Models\Order;
+use App\Models\Merchant;
+use App\Models\Affiliate;
+use App\Jobs\PayoutOrderJob;
 use App\Services\ApiService;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
-use Tests\TestCase;
+
 
 class PayoutOrderJobTest extends TestCase
 {
@@ -32,17 +33,21 @@ class PayoutOrderJobTest extends TestCase
 
     public function test_calls_api()
     {
-        $this->mock(ApiService::class)
+        try {
+            $this->mock(ApiService::class)
             ->shouldReceive('sendPayout')
             ->once()
             ->with($this->order->affiliate->user->email, $this->order->commission_owed);
 
-        dispatch(new PayoutOrderJob($this->order));
+            dispatch(new PayoutOrderJob($this->order));
 
-        $this->assertDatabaseHas('orders', [
-            'id' => $this->order->id,
-            'payout_status' => Order::STATUS_PAID
-        ]);
+            $this->assertDatabaseHas('orders', [
+                'id' => $this->order->id,
+                'payout_status' => Order::STATUS_PAID
+            ]);
+        } catch (\Throwable $th) {
+            $this->fail($th);
+        }
     }
 
     public function test_rolls_back_if_exception_thrown()
